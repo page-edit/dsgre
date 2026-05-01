@@ -2342,13 +2342,16 @@
             }
         });
 
-        // Calcul du prix
+        // Calcul du prix - version robuste avec valeurs par defaut
         function calculatePrice() {
-            const type = document.querySelector('input[name="type"]:checked').value;
-            const duration = parseInt(document.getElementById('duration').value);
-            const travel = parseInt(document.getElementById('travel').value);
-            const complexity = document.getElementById('complexity').value;
-            const eventType = document.getElementById('eventType').value;
+            const typeEl = document.querySelector('input[name="type"]:checked');
+            const type = typeEl ? typeEl.value : 'photo';
+            const duration = parseInt(document.getElementById('duration').value) || 4;
+            const travel = parseInt(document.getElementById('travel').value) || 0;
+            const complexityEl = document.getElementById('complexity');
+            const complexity = complexityEl ? complexityEl.value : 'standard';
+            const eventTypeEl = document.getElementById('eventType');
+            const eventType = eventTypeEl ? eventTypeEl.value : 'mariage';
             
             let basePrice = 0;
             let travelCost = travel;
@@ -2378,7 +2381,7 @@
                     else basePrice = 1200;
                 }
                 details.serviceLabel = 'Photographie';
-                details.detailLabel = 'Couverture photo complète de l\'événement - Photos retouchées HD - ' + duration + 'h de shooting';
+                details.detailLabel = 'Couverture photo complete - Photos retouchees HD - ' + duration + 'h de shooting';
             } else if (type === 'video') {
                 let editingTime;
                 if (duration <= 2) {
@@ -2391,13 +2394,13 @@
                 let totalHours = duration + editingTime;
                 basePrice = totalHours * 50;
                 if (complexity === 'complexe') basePrice = Math.floor(basePrice * 1.2);
-                details.serviceLabel = 'Vidéographie';
-                details.detailLabel = 'Captation vidéo complète ' + duration + 'h + Montage ' + editingTime + 'h (' + complexity + ')';
+                details.serviceLabel = 'Videographie';
+                details.detailLabel = 'Captation video ' + duration + 'h + Montage ' + editingTime + 'h (' + complexity + ')';
                 details.editingTime = editingTime;
             } else {
                 basePrice = duration * 500;
-                details.serviceLabel = 'Photo + Vidéo';
-                details.detailLabel = 'Couverture complète photo et vidéo - ' + duration + 'h de présence';
+                details.serviceLabel = 'Photo + Video';
+                details.detailLabel = 'Couverture complete photo et video - ' + duration + 'h de presence';
             }
 
             const totalPrice = Math.floor(basePrice + travelCost);
@@ -2446,7 +2449,8 @@
         });
 
         window.addEventListener('DOMContentLoaded', function() {
-            const type = document.querySelector('input[name="type"]:checked').value;
+            const typeEl = document.querySelector('input[name="type"]:checked');
+            const type = typeEl ? typeEl.value : 'photo';
             const label = document.getElementById('estimateLabel');
             const note = document.getElementById('estimateNote');
             const complexitySelect = document.getElementById('complexity');
@@ -2485,7 +2489,9 @@
         document.getElementById('eventType').addEventListener('change', function() {
             const eventType = this.value;
             const note = document.getElementById('estimateNote');
-            const type = document.querySelector('input[name="type"]:checked').value;
+            const typeEl = document.querySelector('input[name="type"]:checked');
+            if (!typeEl) return;
+            const type = typeEl.value;
 
             if (type === 'photo') {
                 if (eventType === 'normal') {
@@ -2506,7 +2512,7 @@
                     note.innerHTML = '* Mariages Photo+Vidéo: 500€/heure (minimum 8h recommandé)';
                 }
             }
-            calculateEstimate();
+            try { calculateEstimate(); } catch(e) { console.error(e); }
         });
 
         // ==================== FONCTIONS DEVIS PDF ====================
@@ -2514,52 +2520,56 @@
         // Préparer les données du devis pour le champ caché (envoi Formspree)
         function prepareDevisData() {
             const priceData = calculatePrice();
-            const name = document.getElementById('name').value || 'Non renseigné';
-            const email = document.getElementById('email').value || 'Non renseigné';
-            const phone = document.getElementById('phone').value || 'Non renseigné';
-            const address = document.getElementById('address').value || 'Non renseigné';
-            const date = document.getElementById('date').value || 'Non renseigné';
+            const name = document.getElementById('name').value || 'Non renseigne';
+            const email = document.getElementById('email').value || 'Non renseigne';
+            const phone = document.getElementById('phone').value || 'Non renseigne';
+            const addressEl = document.getElementById('address');
+            const address = addressEl ? (addressEl.value || 'Non renseigne') : 'Non renseigne';
+            const date = document.getElementById('date').value || 'Non renseigne';
             const duration = document.getElementById('duration').value;
             const eventType = document.getElementById('eventType').value;
-            const type = document.querySelector('input[name="type"]:checked').value;
+            const typeEl = document.querySelector('input[name="type"]:checked');
+            const type = typeEl ? typeEl.value : 'photo';
             const travel = document.getElementById('travel');
-            const travelText = travel.options[travel.selectedIndex].text;
-            const complexity = document.getElementById('complexity').value;
-            const details = document.getElementById('details').value || 'Aucun détail';
+            const travelText = travel ? travel.options[travel.selectedIndex].text : 'Inclus';
+            const complexityEl = document.getElementById('complexity');
+            const complexity = complexityEl ? complexityEl.value : 'standard';
+            const detailsEl = document.getElementById('details');
+            const details = detailsEl ? (detailsEl.value || 'Aucun detail') : 'Aucun detail';
 
             const typeLabel = type === 'photo' ? 'Photo uniquement' : (type === 'video' ? 'Vidéo uniquement' : 'Photo + Vidéo');
             const eventLabel = eventType === 'mariage' ? 'Mariage' : 'Standard (portrait, event, sport...)';
 
-            const devisText = `
-=== DEVIS CHAYMASSAMA ===
-Numéro: DEV-${Date.now().toString().slice(-6)}
-Date: ${new Date().toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'})}
-
---- CLIENT ---
-Nom: ${name}
-Téléphone: ${phone}
-Email: ${email}
-Adresse: ${address}
-
---- ÉVÉNEMENT ---
-Type d'événement: ${eventLabel}
-Type de prestation: ${typeLabel}
-Date: ${date}
-Durée: ${duration} heures
-Déplacement: ${travelText}
-Niveau de montage: ${complexity}
-Détails: ${details}
-
---- PRIX ---
-Prix de base: ${priceData.basePrice.toLocaleString('fr-BE')}€
-Frais de déplacement: ${priceData.travelCost}€
-TOTAL TTC: ${priceData.totalPrice.toLocaleString('fr-BE')}€
-
---- CONDITIONS ---
-Devis valable 30 jours.
-Acompte de 30% demandé pour réservation.
-TVA non applicable (art. 56 §2 Code TVA - petite entreprise).
-`.trim();
+            const devisText = [
+                '=== DEVIS CHAYMASSAMA ===',
+                'Numero: DEV-' + Date.now().toString().slice(-6),
+                'Date: ' + new Date().toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'}),
+                '',
+                '--- CLIENT ---',
+                'Nom: ' + name,
+                'Telephone: ' + phone,
+                'Email: ' + email,
+                'Adresse: ' + address,
+                '',
+                '--- EVENEMENT ---',
+                'Type d\'evenement: ' + eventLabel,
+                'Type de prestation: ' + typeLabel,
+                'Date: ' + date,
+                'Duree: ' + duration + ' heures',
+                'Deplacement: ' + travelText,
+                'Niveau de montage: ' + complexity,
+                'Details: ' + details,
+                '',
+                '--- PRIX ---',
+                'Prix de base: ' + priceData.basePrice.toLocaleString('fr-BE') + ' EUR',
+                'Frais de deplacement: ' + priceData.travelCost + ' EUR',
+                'TOTAL TTC: ' + priceData.totalPrice.toLocaleString('fr-BE') + ' EUR',
+                '',
+                '--- CONDITIONS ---',
+                'Devis valable 30 jours.',
+                'Acompte de 30% demande pour reservation.',
+                'TVA non applicable (art. 56 paragraphe 2 Code TVA - petite entreprise).'
+            ].join('\n');
 
             document.getElementById('devisDetails').value = devisText;
             lastDevisData = {
@@ -2690,7 +2700,7 @@ TVA non applicable (art. 56 §2 Code TVA - petite entreprise).
             }
         }
 
-        // Gestion du formulaire
+        // Gestion du formulaire - version robuste avec timeout et try-catch
         document.getElementById('bookingForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -2698,27 +2708,53 @@ TVA non applicable (art. 56 §2 Code TVA - petite entreprise).
             const downloadBtn = document.getElementById('downloadDevisBtn');
             
             // Préparer les données du devis pour l'email
-            prepareDevisData();
+            try {
+                prepareDevisData();
+            } catch (err) {
+                console.error('Erreur prepareDevisData:', err);
+            }
             
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+            
+            // Timeout de sécurité pour éviter le blocage infini
+            let hasCompleted = false;
+            const safetyTimeout = setTimeout(function() {
+                if (!hasCompleted) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
+                    alert('Le serveur ne répond pas. Veuillez réessayer plus tard.');
+                }
+            }, 15000);
             
             fetch(this.action, {
                 method: 'POST',
                 body: new FormData(this),
                 headers: { 'Accept': 'application/json' }
-            }).then(response => {
+            }).then(function(response) {
+                hasCompleted = true;
+                clearTimeout(safetyTimeout);
                 if (response.ok) {
                     successMsg.classList.add('show');
                     downloadBtn.style.display = 'inline-flex';
-                    this.reset();
-                    calculateEstimate();
+                    document.getElementById('bookingForm').reset();
+                    try {
+                        calculateEstimate();
+                    } catch (err) {
+                        console.error('Erreur calculateEstimate apres reset:', err);
+                        document.getElementById('estimatePrice').textContent = '---';
+                    }
                 } else {
-                    alert('Une erreur est survenue. Veuillez réessayer.');
+                    alert('Une erreur est survenue (' + response.status + '). Veuillez réessayer.');
                 }
-            }).catch(error => {
-                alert('Erreur de connexion. Veuillez réessayer.');
-            }).finally(() => {
+            }).catch(function(error) {
+                hasCompleted = true;
+                clearTimeout(safetyTimeout);
+                console.error('Erreur fetch:', error);
+                alert('Erreur de connexion. Vérifiez votre connexion internet et réessayez.');
+            }).finally(function() {
+                hasCompleted = true;
+                clearTimeout(safetyTimeout);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
             });
