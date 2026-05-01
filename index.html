@@ -2516,31 +2516,29 @@
         });
 
         // ==================== FONCTIONS DEVIS PDF ====================
+        
+        var generatedPDF = null;
+        var lastDevisData = null;
 
-        // Préparer les données du devis pour le champ caché (envoi Formspree)
         function prepareDevisData() {
-            const priceData = calculatePrice();
-            const name = document.getElementById('name').value || 'Non renseigne';
-            const email = document.getElementById('email').value || 'Non renseigne';
-            const phone = document.getElementById('phone').value || 'Non renseigne';
-            const addressEl = document.getElementById('address');
-            const address = addressEl ? (addressEl.value || 'Non renseigne') : 'Non renseigne';
-            const date = document.getElementById('date').value || 'Non renseigne';
-            const duration = document.getElementById('duration').value;
-            const eventType = document.getElementById('eventType').value;
-            const typeEl = document.querySelector('input[name="type"]:checked');
-            const type = typeEl ? typeEl.value : 'photo';
-            const travel = document.getElementById('travel');
-            const travelText = travel ? travel.options[travel.selectedIndex].text : 'Inclus';
-            const complexityEl = document.getElementById('complexity');
-            const complexity = complexityEl ? complexityEl.value : 'standard';
-            const detailsEl = document.getElementById('details');
-            const details = detailsEl ? (detailsEl.value || 'Aucun detail') : 'Aucun detail';
+            var priceData = calculatePrice();
+            var name = document.getElementById('name').value || 'Non renseigne';
+            var email = document.getElementById('email').value || 'Non renseigne';
+            var phone = document.getElementById('phone').value || 'Non renseigne';
+            var address = document.getElementById('address').value || 'Non renseigne';
+            var date = document.getElementById('date').value || 'Non renseigne';
+            var duration = document.getElementById('duration').value;
+            var eventType = document.getElementById('eventType').value;
+            var type = document.querySelector('input[name="type"]:checked').value;
+            var travel = document.getElementById('travel');
+            var travelText = travel.options[travel.selectedIndex].text;
+            var complexity = document.getElementById('complexity').value;
+            var details = document.getElementById('details').value || 'Aucun detail';
 
-            const typeLabel = type === 'photo' ? 'Photo uniquement' : (type === 'video' ? 'Vidéo uniquement' : 'Photo + Vidéo');
-            const eventLabel = eventType === 'mariage' ? 'Mariage' : 'Standard (portrait, event, sport...)';
+            var typeLabel = type === 'photo' ? 'Photo uniquement' : (type === 'video' ? 'Video uniquement' : 'Photo + Video');
+            var eventLabel = eventType === 'mariage' ? 'Mariage' : 'Standard (portrait, event, sport...)';
 
-            const devisText = [
+            var devisText = [
                 '=== DEVIS CHAYMASSAMA ===',
                 'Numero: DEV-' + Date.now().toString().slice(-6),
                 'Date: ' + new Date().toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'}),
@@ -2573,17 +2571,18 @@
 
             document.getElementById('devisDetails').value = devisText;
             lastDevisData = {
-                name, email, phone, address, date, duration, eventType, type,
-                travelText, complexity, details, priceData, typeLabel, eventLabel
+                name: name, email: email, phone: phone, address: address,
+                date: date, duration: duration, eventType: eventType, type: type,
+                travelText: travelText, complexity: complexity, details: details,
+                priceData: priceData, typeLabel: typeLabel, eventLabel: eventLabel
             };
             return lastDevisData;
         }
 
-        // Remplir le template du devis avec les données
         function fillDevisTemplate(data) {
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'});
-            const devisNum = 'DEV-' + now.getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000);
+            var now = new Date();
+            var dateStr = now.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long', year: 'numeric'});
+            var devisNum = 'DEV-' + now.getFullYear() + '-' + String(Math.floor(Math.random() * 9000) + 1000);
 
             document.getElementById('devis-numero').textContent = 'N° ' + devisNum;
             document.getElementById('devis-date').textContent = dateStr;
@@ -2598,12 +2597,11 @@
             document.getElementById('devis-event-lieu').textContent = data.address || '_________________________';
             document.getElementById('devis-event-duree').textContent = data.duration ? data.duration + ' heures' : '_________________________';
 
-            // Remplir le tableau
-            const pd = data.priceData;
+            var pd = data.priceData;
             if (data.type === 'photo') {
-                document.getElementById('devis-detail-photo').innerHTML = 'Couverture complète de l\'événement<br>Photos retouchées HD - ' + data.duration + 'h de shooting';
-                document.getElementById('devis-prix-photo').textContent = pd.basePrice.toLocaleString('fr-BE') + '€';
-                document.getElementById('devis-total-photo').textContent = pd.basePrice.toLocaleString('fr-BE') + '€';
+                document.getElementById('devis-detail-photo').innerHTML = 'Couverture complete<br>Photos retouchees HD - ' + data.duration + 'h';
+                document.getElementById('devis-prix-photo').textContent = pd.basePrice.toLocaleString('fr-BE') + 'EUR';
+                document.getElementById('devis-total-photo').textContent = pd.basePrice.toLocaleString('fr-BE') + 'EUR';
                 document.getElementById('devis-detail-video').innerHTML = '—';
                 document.getElementById('devis-prix-video').textContent = '—';
                 document.getElementById('devis-total-video').textContent = '—';
@@ -2611,158 +2609,138 @@
                 document.getElementById('devis-detail-photo').innerHTML = '—';
                 document.getElementById('devis-prix-photo').textContent = '—';
                 document.getElementById('devis-total-photo').textContent = '—';
-                document.getElementById('devis-detail-video').innerHTML = 'Captation vidéo complète - Montage inclus<br>' + data.duration + 'h tournage + ' + (pd.editingTime || '?') + 'h montage (' + data.complexity + ')';
-                document.getElementById('devis-prix-video').textContent = pd.basePrice.toLocaleString('fr-BE') + '€';
-                document.getElementById('devis-total-video').textContent = pd.basePrice.toLocaleString('fr-BE') + '€';
+                document.getElementById('devis-detail-video').innerHTML = 'Captation video - Montage inclus<br>' + data.duration + 'h + ' + (pd.editingTime || '?') + 'h montage';
+                document.getElementById('devis-prix-video').textContent = pd.basePrice.toLocaleString('fr-BE') + 'EUR';
+                document.getElementById('devis-total-video').textContent = pd.basePrice.toLocaleString('fr-BE') + 'EUR';
             } else {
-                document.getElementById('devis-detail-photo').innerHTML = 'Couverture photo de l\'événement<br>Photos retouchées HD';
-                document.getElementById('devis-prix-photo').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + '€';
-                document.getElementById('devis-total-photo').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + '€';
-                document.getElementById('devis-detail-video').innerHTML = 'Captation vidéo complète<br>Montage inclus - ' + data.duration + 'h';
-                document.getElementById('devis-prix-video').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + '€';
-                document.getElementById('devis-total-video').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + '€';
+                document.getElementById('devis-detail-photo').innerHTML = 'Couverture photo<br>Photos retouchees HD';
+                document.getElementById('devis-prix-photo').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + 'EUR';
+                document.getElementById('devis-total-photo').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + 'EUR';
+                document.getElementById('devis-detail-video').innerHTML = 'Captation video<br>Montage inclus - ' + data.duration + 'h';
+                document.getElementById('devis-prix-video').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + 'EUR';
+                document.getElementById('devis-total-video').textContent = (pd.basePrice / 2).toLocaleString('fr-BE') + 'EUR';
             }
 
-            // Teaser offert si prix > 300€
             if (pd.totalPrice > 300) {
-                document.getElementById('devis-detail-options').innerHTML = 'Teaser réseaux sociaux OFFERT<br>Déplacement: ' + data.travelText;
+                document.getElementById('devis-detail-options').innerHTML = 'Teaser reseaux sociaux OFFERT<br>Deplacement: ' + data.travelText;
                 document.getElementById('devis-prix-options').textContent = 'Offert';
-                document.getElementById('devis-total-options').textContent = '0€';
+                document.getElementById('devis-total-options').textContent = '0EUR';
             } else {
-                document.getElementById('devis-detail-options').innerHTML = 'Déplacement: ' + data.travelText;
-                document.getElementById('devis-prix-options').textContent = pd.travelCost + '€';
-                document.getElementById('devis-total-options').textContent = pd.travelCost + '€';
+                document.getElementById('devis-detail-options').innerHTML = 'Deplacement: ' + data.travelText;
+                document.getElementById('devis-prix-options').textContent = pd.travelCost + 'EUR';
+                document.getElementById('devis-total-options').textContent = pd.travelCost + 'EUR';
             }
 
-            document.getElementById('devis-sous-total').textContent = pd.totalPrice.toLocaleString('fr-BE') + '€';
-            document.getElementById('devis-total-ttc').textContent = pd.totalPrice.toLocaleString('fr-BE') + '€';
+            document.getElementById('devis-sous-total').textContent = pd.totalPrice.toLocaleString('fr-BE') + 'EUR';
+            document.getElementById('devis-total-ttc').textContent = pd.totalPrice.toLocaleString('fr-BE') + 'EUR';
         }
 
-        // Générer et télécharger le PDF du devis
-        async function generateDevisPDF() {
-            if (!lastDevisData) {
-                alert('Veuillez d\'abord soumettre le formulaire pour generer le devis.');
+        async function buildDevisPDF() {
+            if (!lastDevisData) return null;
+
+            fillDevisTemplate(lastDevisData);
+
+            var template = document.getElementById('devis-template');
+            template.style.position = 'static';
+            template.style.left = '0';
+            template.style.top = '0';
+
+            if (document.fonts && document.fonts.ready) {
+                await document.fonts.ready;
+            }
+            await new Promise(function(r) { setTimeout(r, 300); });
+
+            var canvas = await html2canvas(template, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: null,
+                logging: false,
+                windowWidth: template.scrollWidth,
+                windowHeight: template.scrollHeight
+            });
+
+            template.style.position = 'absolute';
+            template.style.left = '-9999px';
+            template.style.top = '0';
+
+            var imgData = canvas.toDataURL('image/png');
+            var pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+
+            var pdfWidth = 210;
+            var pdfHeight = 297;
+            var imgWidth = canvas.width;
+            var imgHeight = canvas.height;
+            var ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            var finalWidth = imgWidth * ratio;
+            var finalHeight = imgHeight * ratio;
+            var imgX = (pdfWidth - finalWidth) / 2;
+            var imgY = (pdfHeight - finalHeight) / 2;
+            if (imgY < 0) imgY = 0;
+
+            pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
+            return pdf;
+        }
+
+        function generateDevisPDF() {
+            if (!generatedPDF) {
+                alert('Veuillez d\'abord soumettre le formulaire.');
                 return;
             }
-
-            const btn = document.getElementById('downloadDevisBtn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generation du PDF...';
-            btn.disabled = true;
-
-            // Toujours remettre le template cache, meme en cas d'erreur
-            function hideTemplate() {
-                var tpl = document.getElementById('devis-template');
-                if (tpl) {
-                    tpl.style.position = 'absolute';
-                    tpl.style.left = '-9999px';
-                    tpl.style.top = '0';
-                }
-            }
-
-            try {
-                // Remplir le template
-                fillDevisTemplate(lastDevisData);
-
-                var template = document.getElementById('devis-template');
-                template.style.position = 'static';
-                template.style.left = '0';
-
-                // Attendre que les polices soient chargees
-                if (document.fonts && document.fonts.ready) {
-                    await document.fonts.ready;
-                }
-
-                // Utiliser html2canvas pour capturer le devis
-                var canvas = await html2canvas(template, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: null,
-                    logging: false,
-                    windowWidth: template.scrollWidth,
-                    windowHeight: template.scrollHeight
-                });
-
-                hideTemplate();
-
-                var imgData = canvas.toDataURL('image/png');
-
-                // Creer le PDF avec jsPDF
-                var jsPDFModule = window.jspdf;
-                var pdf = new jsPDFModule.jsPDF('p', 'mm', 'a4');
-
-                var pdfWidth = 210;
-                var pdfHeight = 297;
-                var imgWidth = canvas.width;
-                var imgHeight = canvas.height;
-                var ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                var finalWidth = imgWidth * ratio;
-                var finalHeight = imgHeight * ratio;
-                var imgX = (pdfWidth - finalWidth) / 2;
-                var imgY = (pdfHeight - finalHeight) / 2;
-                if (imgY < 0) imgY = 0;
-
-                pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
-
-                var name = lastDevisData.name ? lastDevisData.name.replace(/\s+/g, '_') : 'client';
-                var dateStr = new Date().toISOString().slice(0, 10);
-                pdf.save('Devis_Chaymassama_' + name + '_' + dateStr + '.pdf');
-
-            } catch (err) {
-                hideTemplate();
-                console.error('Erreur generation PDF:', err);
-                alert('Une erreur est survenue lors de la generation du PDF. Veuillez reessayer.');
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
+            var name = lastDevisData && lastDevisData.name ? lastDevisData.name.replace(/\s+/g, '_') : 'client';
+            var dateStr = new Date().toISOString().slice(0, 10);
+            generatedPDF.save('Devis_Chaymassama_' + name + '_' + dateStr + '.pdf');
         }
 
-        // Gestion du formulaire - version propre avec try/catch complet
-        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        // Soumission du formulaire - genere le PDF et l'envoie a Formspree
+        document.getElementById('bookingForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            const successMsg = document.getElementById('successMessage');
-            const downloadBtn = document.getElementById('downloadDevisBtn');
-            const form = this;
-            
-            // Préparer les données du devis pour l'email
-            try {
-                prepareDevisData();
-            } catch (err) {
-                console.error('Erreur prepareDevisData:', err);
-            }
-            
+            var btn = document.getElementById('submitBtn');
+            var successMsg = document.getElementById('successMessage');
+            var downloadBtn = document.getElementById('downloadDevisBtn');
+            var form = this;
+
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
-            
-            fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: { 'Accept': 'application/json' }
-            }).then(function(response) {
+
+            try {
+                // 1. Preparer les donnees texte
+                prepareDevisData();
+
+                // 2. Generer le PDF
+                var pdf = await buildDevisPDF();
+                if (!pdf) throw new Error('PDF non genere');
+                generatedPDF = pdf;
+
+                // 3. Convertir en Blob
+                var pdfBlob = pdf.output('blob');
+
+                // 4. Creer FormData avec le PDF en piece jointe
+                var formData = new FormData(form);
+                formData.append('attachment', pdfBlob, 'Devis_Chaymassama.pdf');
+
+                // 5. Envoyer a Formspree
+                var response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
+                });
+
                 if (response.ok) {
-                    try {
-                        successMsg.classList.add('show');
-                        downloadBtn.style.display = 'inline-flex';
-                        form.reset();
-                        try { calculateEstimate(); } catch (e) { /* ignorer */ }
-                    } catch (innerErr) {
-                        console.error('Erreur affichage succes:', innerErr);
-                        successMsg.classList.add('show');
-                        downloadBtn.style.display = 'inline-flex';
-                    }
+                    successMsg.classList.add('show');
+                    downloadBtn.style.display = 'inline-flex';
+                    form.reset();
+                    try { calculateEstimate(); } catch(e) {}
                 } else {
                     alert('Erreur serveur (' + response.status + '). Veuillez reessayer.');
                 }
-            }).catch(function(error) {
-                console.error('Erreur reseau:', error);
-                alert('Erreur de connexion au serveur. Verifiez votre connexion internet.');
-            }).finally(function() {
+            } catch (err) {
+                console.error('Erreur:', err);
+                alert('Erreur lors de l\'envoi. Veuillez reessayer.');
+            } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
-            });
+            }
         });
     </script>
 
