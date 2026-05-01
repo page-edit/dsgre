@@ -2641,25 +2641,40 @@
         // Générer et télécharger le PDF du devis
         async function generateDevisPDF() {
             if (!lastDevisData) {
-                alert('Veuillez d\'abord soumettre le formulaire pour générer le devis.');
+                alert('Veuillez d\'abord soumettre le formulaire pour generer le devis.');
                 return;
             }
 
             const btn = document.getElementById('downloadDevisBtn');
             const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération du PDF...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generation du PDF...';
             btn.disabled = true;
+
+            // Toujours remettre le template cache, meme en cas d'erreur
+            function hideTemplate() {
+                var tpl = document.getElementById('devis-template');
+                if (tpl) {
+                    tpl.style.position = 'absolute';
+                    tpl.style.left = '-9999px';
+                    tpl.style.top = '0';
+                }
+            }
 
             try {
                 // Remplir le template
                 fillDevisTemplate(lastDevisData);
 
-                const template = document.getElementById('devis-template');
+                var template = document.getElementById('devis-template');
                 template.style.position = 'static';
                 template.style.left = '0';
 
+                // Attendre que les polices soient chargees
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+
                 // Utiliser html2canvas pour capturer le devis
-                const canvas = await html2canvas(template, {
+                var canvas = await html2canvas(template, {
                     scale: 2,
                     useCORS: true,
                     allowTaint: true,
@@ -2669,43 +2684,48 @@
                     windowHeight: template.scrollHeight
                 });
 
-                template.style.position = 'absolute';
-                template.style.left = '-9999px';
+                hideTemplate();
 
-                const imgData = canvas.toDataURL('image/png');
+                var imgData = canvas.toDataURL('image/png');
 
-                // Créer le PDF avec jsPDF
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
+                // Creer le PDF avec jsPDF
+                var jsPDFModule = window.jspdf;
+                var pdf = new jsPDFModule.jsPDF('p', 'mm', 'a4');
 
-                const pdfWidth = 210;
-                const pdfHeight = 297;
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                const imgX = (pdfWidth - imgWidth * ratio) / 2;
-                const imgY = 0;
+                var pdfWidth = 210;
+                var pdfHeight = 297;
+                var imgWidth = canvas.width;
+                var imgHeight = canvas.height;
+                var ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+                var finalWidth = imgWidth * ratio;
+                var finalHeight = imgHeight * ratio;
+                var imgX = (pdfWidth - finalWidth) / 2;
+                var imgY = (pdfHeight - finalHeight) / 2;
+                if (imgY < 0) imgY = 0;
 
-                pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+                pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
 
-                const name = lastDevisData.name ? lastDevisData.name.replace(/\s+/g, '_') : 'client';
-                pdf.save(`Devis_Chaymassama_${name}_${new Date().toISOString().slice(0,10)}.pdf`);
+                var name = lastDevisData.name ? lastDevisData.name.replace(/\s+/g, '_') : 'client';
+                var dateStr = new Date().toISOString().slice(0, 10);
+                pdf.save('Devis_Chaymassama_' + name + '_' + dateStr + '.pdf');
 
             } catch (err) {
-                console.error('Erreur génération PDF:', err);
-                alert('Une erreur est survenue lors de la génération du PDF. Veuillez réessayer.');
+                hideTemplate();
+                console.error('Erreur generation PDF:', err);
+                alert('Une erreur est survenue lors de la generation du PDF. Veuillez reessayer.');
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             }
         }
 
-        // Gestion du formulaire - version robuste avec timeout et try-catch
+        // Gestion du formulaire - version propre avec try/catch complet
         document.getElementById('bookingForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             const successMsg = document.getElementById('successMessage');
             const downloadBtn = document.getElementById('downloadDevisBtn');
+            const form = this;
             
             // Préparer les données du devis pour l'email
             try {
@@ -2717,44 +2737,29 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
             
-            // Timeout de sécurité pour éviter le blocage infini
-            let hasCompleted = false;
-            const safetyTimeout = setTimeout(function() {
-                if (!hasCompleted) {
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
-                    alert('Le serveur ne répond pas. Veuillez réessayer plus tard.');
-                }
-            }, 15000);
-            
-            fetch(this.action, {
+            fetch(form.action, {
                 method: 'POST',
-                body: new FormData(this),
+                body: new FormData(form),
                 headers: { 'Accept': 'application/json' }
             }).then(function(response) {
-                hasCompleted = true;
-                clearTimeout(safetyTimeout);
                 if (response.ok) {
-                    successMsg.classList.add('show');
-                    downloadBtn.style.display = 'inline-flex';
-                    document.getElementById('bookingForm').reset();
                     try {
-                        calculateEstimate();
-                    } catch (err) {
-                        console.error('Erreur calculateEstimate apres reset:', err);
-                        document.getElementById('estimatePrice').textContent = '---';
+                        successMsg.classList.add('show');
+                        downloadBtn.style.display = 'inline-flex';
+                        form.reset();
+                        try { calculateEstimate(); } catch (e) { /* ignorer */ }
+                    } catch (innerErr) {
+                        console.error('Erreur affichage succes:', innerErr);
+                        successMsg.classList.add('show');
+                        downloadBtn.style.display = 'inline-flex';
                     }
                 } else {
-                    alert('Une erreur est survenue (' + response.status + '). Veuillez réessayer.');
+                    alert('Erreur serveur (' + response.status + '). Veuillez reessayer.');
                 }
             }).catch(function(error) {
-                hasCompleted = true;
-                clearTimeout(safetyTimeout);
-                console.error('Erreur fetch:', error);
-                alert('Erreur de connexion. Vérifiez votre connexion internet et réessayez.');
+                console.error('Erreur reseau:', error);
+                alert('Erreur de connexion au serveur. Verifiez votre connexion internet.');
             }).finally(function() {
-                hasCompleted = true;
-                clearTimeout(safetyTimeout);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
             });
