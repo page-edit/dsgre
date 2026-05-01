@@ -1993,9 +1993,35 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
                 if (response.ok) {
                     successMsg.classList.add('show');
                     successMsg.style.display = 'block';
+
+                    // Stocker les données du formulaire AVANT le reset
+                    const formData = {
+                        name: form.querySelector('#name').value,
+                        phone: form.querySelector('#phone').value,
+                        email: form.querySelector('#email').value,
+                        date: form.querySelector('#date').value,
+                        type: form.querySelector('input[name="type"]:checked').value,
+                        duration: form.querySelector('#duration').value,
+                        eventType: form.querySelector('#eventType').value,
+                        travel: form.querySelector('#travel').value,
+                        complexity: form.querySelector('#complexity').value,
+                        price: document.getElementById('estimatePrice').textContent
+                    };
+                    window.lastDevisData = formData;
+
                     // Afficher le bouton de téléchargement du devis
                     const downloadSection = document.getElementById('downloadDevisSection');
-                    if (downloadSection) { downloadSection.style.display = 'block'; }
+                    if (downloadSection) { 
+                        downloadSection.style.display = 'block'; 
+                    }
+
+                    // Timer 10 secondes pour cacher le bouton si pas cliqué
+                    setTimeout(function() {
+                        if (downloadSection && downloadSection.style.display === 'block') {
+                            downloadSection.style.display = 'none';
+                        }
+                    }, 10000);
+
                     this.reset();
                     calculateEstimate();
                 } else {
@@ -2139,18 +2165,20 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
         document.body.insertAdjacentHTML('beforeend', devisModalHTML);
 
         function generateDevisModal() {
-            const form = document.getElementById('bookingForm');
+            // Utiliser les données stockées lors de l'envoi du formulaire
+            const data = window.lastDevisData || {};
 
             // Récupérer les valeurs
-            const name = form.querySelector('#name').value || '—';
-            const phone = form.querySelector('#phone').value || '—';
-            const email = form.querySelector('#email').value || '—';
-            const date = form.querySelector('#date').value;
-            const type = form.querySelector('input[name="type"]:checked').value;
-            const duration = form.querySelector('#duration').value;
-            const eventType = form.querySelector('#eventType').value;
-            const travel = form.querySelector('#travel').value;
-            const price = document.getElementById('estimatePrice').textContent;
+            const name = data.name || '—';
+            const phone = data.phone || '—';
+            const email = data.email || '—';
+            const date = data.date;
+            const type = data.type || 'photo';
+            const duration = data.duration || '4';
+            const eventType = data.eventType || 'mariage';
+            const travel = data.travel || '0';
+            const complexity = data.complexity || 'standard';
+            const price = data.price || '0€';
 
             // Mettre à jour le devis
             const now = new Date();
@@ -2177,7 +2205,7 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
             let serviceDetail = duration + 'h — ' + eventLabels[eventType];
             if (type === 'video') {
                 const complexityLabels = { 'simple': 'Montage simple', 'standard': 'Montage standard', 'complexe': 'Montage complexe' };
-                const complexity = form.querySelector('#complexity').value;
+                const complexity = data.complexity || 'standard';
                 serviceDetail += ' — ' + complexityLabels[complexity];
             }
 
