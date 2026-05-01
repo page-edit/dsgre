@@ -1521,7 +1521,7 @@
             Remplissez le formulaire ci-dessous pour recevoir votre devis personnalisé sous 24 h.
         </p>
 
-        <form id="bookingForm" action="https://formspree.io/f/xjgeqqqq" method="POST">
+        <form id="bookingForm" action="https://formspree.io/f/xjgeqqqq" method="POST" enctype="multipart/form-data">
             <div class="form-grid">
                 <div class="form-group">
                     <label for="name">Nom & Prénom *</label>
@@ -1981,60 +1981,68 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             const successMsg = document.getElementById('successMessage');
-            
+            const downloadSection = document.getElementById('downloadDevisSection');
+            const form = this;
+
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
-            
-            fetch(this.action, {
+
+            // Stocker les données AVANT l'envoi
+            const formData = {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                date: document.getElementById('date').value,
+                type: document.querySelector('input[name="type"]:checked').value,
+                duration: document.getElementById('duration').value,
+                eventType: document.getElementById('eventType').value,
+                travel: document.getElementById('travel').value,
+                complexity: document.getElementById('complexity').value,
+                price: document.getElementById('estimatePrice').textContent
+            };
+            window.lastDevisData = formData;
+
+            // Utiliser fetch avec Referer explicite pour compatibilité 4G/5G
+            fetch(form.action, {
                 method: 'POST',
-                body: new FormData(this),
-                headers: { 'Accept': 'application/json' }
-            }).then(response => {
+                body: new FormData(form),
+                headers: { 
+                    'Accept': 'application/json',
+                    'Referer': window.location.href
+                },
+                mode: 'cors',
+                credentials: 'omit'
+            }).then(function(response) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
+
                 if (response.ok) {
                     successMsg.classList.add('show');
                     successMsg.style.display = 'block';
 
-                    // Stocker les données du formulaire AVANT le reset
-                    const formData = {
-                        name: document.getElementById('name').value,
-                        phone: document.getElementById('phone').value,
-                        email: document.getElementById('email').value,
-                        date: document.getElementById('date').value,
-                        type: document.querySelector('input[name="type"]:checked').value,
-                        duration: document.getElementById('duration').value,
-                        eventType: document.getElementById('eventType').value,
-                        travel: document.getElementById('travel').value,
-                        complexity: document.getElementById('complexity').value,
-                        price: document.getElementById('estimatePrice').textContent
-                    };
-                    window.lastDevisData = formData;
-
-                    // Afficher le bouton de téléchargement du devis
-                    const downloadSection = document.getElementById('downloadDevisSection');
                     if (downloadSection) { 
                         downloadSection.style.display = 'block'; 
                     }
 
-                    // Timer 10 secondes pour cacher le bouton si pas cliqué
                     setTimeout(function() {
                         if (downloadSection && downloadSection.style.display === 'block') {
                             downloadSection.style.display = 'none';
                         }
                     }, 10000);
 
-                    this.reset();
+                    form.reset();
                     calculateEstimate();
                 } else {
+                    console.error('Erreur serveur:', response.status);
                     alert('Une erreur est survenue. Veuillez réessayer.');
                 }
-            }).catch(error => {
-                alert('Erreur de connexion. Veuillez réessayer.');
-            }).finally(() => {
+            }).catch(function(error) {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer ma demande';
+                console.error('Erreur réseau:', error);
+                alert('Erreur de connexion. Vérifiez votre connexion et réessayez.');
             });
-        });
-    </script>
+        });</script>
 
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -2246,21 +2254,36 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
                 const { jsPDF } = window.jspdf;
                 const element = document.getElementById('devisPaper');
 
+                // Forcer la taille du contenu pour qu'il rentre sur une page A4
+                element.style.width = '210mm';
+                element.style.maxWidth = '210mm';
+
                 const canvas = await html2canvas(element, {
-                    scale: 2,
+                    scale: 2.5,
                     useCORS: true,
-                    backgroundColor: '#E8F4FC'
+                    backgroundColor: '#E8F4FC',
+                    logging: false,
+                    windowWidth: 800
                 });
+
+                // Remettre le style original
+                element.style.width = '';
+                element.style.maxWidth = '';
 
                 const imgData = canvas.toDataURL('image/png');
                 const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                const pdfWidth = 210; // A4 width in mm
+                const pdfHeight = 297; // A4 height in mm
                 const imgWidth = canvas.width;
                 const imgHeight = canvas.height;
+
+                // Calculer le ratio pour que l'image rentre dans la page A4
                 const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+
+                // Centrer l'image
                 const imgX = (pdfWidth - imgWidth * ratio) / 2;
-                const imgY = 10;
+                const imgY = 0;
 
                 pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
 
