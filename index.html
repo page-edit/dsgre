@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accès VIP — Discord</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: #0d0d0d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: #fff;
+      padding: 24px;
+    }
+
+    .card {
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 48px 40px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+
+    /* ── PAGE ACCUEIL ── */
+    .badge {
+      display: inline-block;
+      background: #5865F2;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 100px;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+
+    h1 span { color: #5865F2; }
+
+    p {
+      color: #888;
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+
+    .price {
+      font-size: 44px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .price sup {
+      font-size: 20px;
+      vertical-align: super;
+      font-weight: 600;
+    }
+
+    .price-label {
+      color: #555;
+      font-size: 13px;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      background: #5865F2;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      padding: 16px;
+      border-radius: 10px;
+      text-decoration: none;
+      transition: background 0.2s;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn:hover { background: #4752c4; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 28px 0;
+    }
+
+    .perks { list-style: none; text-align: left; }
+
+    .perks li {
+      color: #aaa;
+      font-size: 14px;
+      padding: 7px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .perks li::before {
+      content: '✓';
+      color: #5865F2;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* ── PAGE SUCCÈS ── */
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: #1a2a1a;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+      font-size: 28px;
+    }
+
+    .countdown {
+      color: #555;
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    .countdown span {
+      color: #5865F2;
+      font-weight: 700;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 3px;
+      background: #222;
+      border-radius: 100px;
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #5865F2;
+      border-radius: 100px;
+      transform-origin: left;
+      animation: drain 5s linear forwards;
+    }
+
+    @keyframes drain {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+
+    /* ── UTILITAIRE ── */
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE ACCUEIL -->
+  <div class="card" id="page-accueil">
+    <div class="badge">Discord VIP</div>
+    <h1>Rejoins le <span>serveur VIP</span></h1>
+    <p>Accède à du contenu exclusif, des conseils et une communauté privée réservée aux membres.</p>
+    <div class="price"><sup>€</sup>4,99</div>
+    <div class="price-label">paiement unique</div>
+    <a href="https://buy.stripe.com/00w6oGbGoabE3S3eb4ew80g" class="btn">Rejoindre maintenant →</a>
+    <hr class="divider" />
+    <ul class="perks">
+      <li>Accès immédiat au Discord VIP</li>
+      <li>Contenu exclusif réservé aux membres</li>
+      <li>Communauté privée</li>
+      <li>Support prioritaire</li>
+    </ul>
+  </div>
+
+  <!-- PAGE SUCCÈS -->
+  <div class="card hidden" id="page-succes">
+    <div class="icon">✅</div>
+    <h1>Paiement confirmé !</h1>
+    <p>Merci pour ton achat. Tu vas être redirigé vers le Discord VIP dans quelques secondes.</p>
+    <div class="progress-bar">
+      <div class="progress-fill"></div>
+    </div>
+    <div class="countdown">Redirection dans <span id="timer">5</span> secondes…</div>
+    <a href="https://discord.gg/NkD9bBArx" class="btn">Accéder au Discord maintenant →</a>
+  </div>
+
+  <script>
+    const DISCORD = 'https://discord.gg/NkD9bBArx';
+    const params  = new URLSearchParams(window.location.search);
+
+    if (params.get('success') === '1') {
+      document.getElementById('page-accueil').classList.add('hidden');
+      document.getElementById('page-succes').classList.remove('hidden');
+
+      let seconds = 5;
+      const el = document.getElementById('timer');
+
+      const interval = setInterval(() => {
+        seconds--;
+        el.textContent = seconds;
+        if (seconds <= 0) {
+          clearInterval(interval);
+          window.location.href = DISCORD;
+        }
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>
